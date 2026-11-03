@@ -7,6 +7,7 @@ import (
 )
 
 func (g *GameStatsSession) replyError(gpErr gpcm.GPError) {
+	g.replyErrors++
 	logging.Error(g.ModuleName, "Reply error:", gpErr.ErrorString)
 	err := common.SendPacket(ServerName, g.ConnIndex, []byte(gpErr.GetMessage()))
 	if gpErr.Fatal || err != nil {

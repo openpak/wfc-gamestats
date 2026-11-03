@@ -5,9 +5,11 @@ import (
 	"openpak/wfc-common/common"
 	"openpak/wfc-common/database"
 	gpcm "openpak/wfc-common/gpcmclient"
+	"openpak/wfc-common/httplog"
 	"openpak/wfc-common/logging"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/linkdata/deadlock"
 	"github.com/logrusorgru/aurora/v3"
@@ -24,6 +26,8 @@ type GameStatsSession struct {
 	SessionKey int32
 	GameName   string
 	gameInfo   *common.GameInfo
+
+	replyErrors int // replyError calls so far; a command that raised one logs as "error"
 
 	Authenticated bool
 	LoginID       int
@@ -221,6 +225,7 @@ func HandlePacket(index uint64, data []byte) {
 	commands = session.handleCommand("authp", commands, session.authp)
 
 	if len(commands) != 0 && !session.Authenticated {
+		httplog.Command(ServerName, commands[0].Command, "denied", time.Now())
 		logging.Error(session.ModuleName, "Attempt to run command before authentication:", aurora.Cyan(commands[0]))
 		session.replyError(gpcm.ErrNotLoggedIn)
 		return
@@ -231,6 +236,7 @@ func HandlePacket(index uint64, data []byte) {
 	common.MaybeUnused(session.ignoreCommand)
 
 	for _, command := range commands {
+		httplog.Command(ServerName, command.Command, "unknown", time.Now())
 		logging.Error(session.ModuleName, "Unknown command:", aurora.Cyan(command))
 	}
 
@@ -254,7 +260,13 @@ func (g *GameStatsSession) handleCommand(name string, commands []common.GameSpyC
 		}
 
 		logging.Info(g.ModuleName, "Command:", aurora.Yellow(command.Command))
+		start, errs := time.Now(), g.replyErrors
 		handler(command)
+		result := "ok"
+		if g.replyErrors != errs {
+			result = "error"
+		}
+		httplog.Command(ServerName, command.Command, result, start)
 	}
 
 	return unhandled
