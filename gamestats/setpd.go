@@ -63,7 +63,7 @@ func (g *GameStatsSession) setpd(command common.GameSpyCommand) {
 		return
 	}
 
-	logging.Info(g.ModuleName, "Set public data: PID:", aurora.Cyan(g.User.ProfileId), "Index:", aurora.Cyan(dindex), "Type:", aurora.Cyan(ptype), "Data:", aurora.Cyan(newData))
+	logging.Info(g.ModuleName, "Set public data: PID:", aurora.Cyan(g.User.ProfileId), "Index:", aurora.Cyan(dindex), "Type:", aurora.Cyan(ptype))
 
 	// Trim extra null byte at the end
 	if len(newData) > 0 && newData[len(newData)-1] == 0 {
