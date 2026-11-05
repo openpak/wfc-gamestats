@@ -1,6 +1,7 @@
 package gamestats
 
 import (
+	"context"
 	"math/rand"
 	"openpak/wfc-common/common"
 	gpcm "openpak/wfc-common/gpcmclient"
@@ -65,6 +66,13 @@ func (g *GameStatsSession) authp(command common.GameSpyCommand) {
 	err := authTokenObj.Unmarshal(authToken)
 	if err != nil {
 		logging.Error(g.ModuleName, "Error unmarshalling authtoken:", err.Error())
+		g.Write(errorCmd)
+		return
+	}
+
+	// Link-first: an unlinked console has no stats session (and gets no profile row here).
+	if !db.LinkedUser(context.Background(), authTokenObj.UserID) {
+		refusedUnlinked.Add(1)
 		g.Write(errorCmd)
 		return
 	}
